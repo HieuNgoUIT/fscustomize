@@ -10,7 +10,7 @@ from . import register_task
 
 
 @register_task("translation_from_pretrained_roberta")
-class TranslationFromPretrainedXLMTask(TranslationTask):
+class TranslationFromPretrainedRobertaTask(TranslationTask):
     """
     Same as TranslationTask except use the MaskedLMDictionary class so that
     we can load data that was binarized with the MaskedLMDictionary class.

@@ -12,3 +12,10 @@ from fairseq_cli.train import cli_main
 
 if __name__ == "__main__":
     cli_main()
+
+
+#train.py data 
+#--task translation_from_pretrained_roberta
+#-s -t
+#--criterion label_smoothed_cross_entropy
+#--share-all-embeddings 
