@@ -41,7 +41,7 @@ class TransformerFromPretrainedRobertaModel(TransformerModel):
 
     @classmethod
     def build_encoder(cls, args, src_dict, embed_tokens):
-        return RobertaEncoder(args, src_dict)
+        return TransformerEncoderFromPretrainedRoberta(args, src_dict, embed_tokens)
 
     @classmethod
     def build_decoder(cls, args, tgt_dict, embed_tokens):
