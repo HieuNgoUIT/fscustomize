@@ -41,7 +41,8 @@ class TransformerFromPretrainedRobertaModel(TransformerModel):
 
     @classmethod
     def build_encoder(cls, args, src_dict, embed_tokens):
-        return TransformerEncoderFromPretrainedRoberta(args, src_dict)
+        args.max_positions = 256
+        return TransformerEncoderFromPretrainedRoberta(args, src_dict, embed_tokens)
 
     @classmethod
     def build_decoder(cls, args, tgt_dict, embed_tokens):
@@ -69,14 +70,13 @@ def upgrade_state_dict_with_roberta_weights(
     state = checkpoint_utils.load_checkpoint_to_cpu(pretrained_roberta_checkpoint)
     roberta_state_dict = state["model"]
     for key in roberta_state_dict.keys():
-
         for search_key in ["embed_tokens", "embed_positions", "layers"]:
             if search_key in key:
                 subkey = key[key.find(search_key) :]
                 assert subkey in state_dict, (
                     "{} Transformer encoder / decoder "
                     "state_dict does not contain {}. Cannot "
-                    "load {} from pretrained XLM checkpoint "
+                    "load {} from pretrained Roberta checkpoint "
                     "{} into Transformer.".format(
                         str(state_dict.keys()), subkey, key, pretrained_roberta_checkpoint
                     )
@@ -86,9 +86,9 @@ def upgrade_state_dict_with_roberta_weights(
     return state_dict
 
 
-class TransformerEncoderFromPretrainedRoberta(RobertaEncoder):
-    def __init__(self, args, dictionary):
-        super().__init__(args, dictionary)
+class TransformerEncoderFromPretrainedRoberta(TransformerEncoder):
+    def __init__(self, args, dictionary, embed_tokens):
+        super().__init__(args, dictionary, embed_tokens)
         assert hasattr(args, "pretrained_roberta_checkpoint"), (
             "--pretrained-roberta-checkpoint must be specified to load Transformer "
             "encoder from pretrained roberta"

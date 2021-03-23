@@ -92,14 +92,13 @@ def upgrade_state_dict_with_xlm_weights(
     state = checkpoint_utils.load_checkpoint_to_cpu(pretrained_xlm_checkpoint)
     xlm_state_dict = state["model"]
     for key in xlm_state_dict.keys():
-
         for search_key in ["embed_tokens", "embed_positions", "layers"]:
             if search_key in key:
                 subkey = key[key.find(search_key) :]
                 assert subkey in state_dict, (
                     "{} Transformer encoder / decoder "
                     "state_dict does not contain {}. Cannot "
-                    "load {} from pretrained XLM checkpoint "
+                    "load {} from pretrained Roberta checkpoint "
                     "{} into Transformer.".format(
                         str(state_dict.keys()), subkey, key, pretrained_xlm_checkpoint
                     )
