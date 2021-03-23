@@ -41,7 +41,7 @@ class TransformerFromPretrainedRobertaModel(TransformerModel):
 
     @classmethod
     def build_encoder(cls, args, src_dict, embed_tokens):
-        return TransformerEncoderFromPretrainedRoberta(args, src_dict, embed_tokens)
+        return TransformerEncoderFromPretrainedRoberta(args, src_dict)
 
     @classmethod
     def build_decoder(cls, args, tgt_dict, embed_tokens):
@@ -86,9 +86,9 @@ def upgrade_state_dict_with_roberta_weights(
     return state_dict
 
 
-class TransformerEncoderFromPretrainedRoberta(TransformerEncoder):
-    def __init__(self, args, dictionary, embed_tokens):
-        super().__init__(args, dictionary, embed_tokens)
+class TransformerEncoderFromPretrainedRoberta(RobertaEncoder):
+    def __init__(self, args, dictionary):
+        super().__init__(args, dictionary)
         assert hasattr(args, "pretrained_roberta_checkpoint"), (
             "--pretrained-roberta-checkpoint must be specified to load Transformer "
             "encoder from pretrained roberta"
