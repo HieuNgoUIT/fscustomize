@@ -86,20 +86,38 @@ def upgrade_state_dict_with_roberta_weights(
     return state_dict
 
 
-class TransformerEncoderFromPretrainedRoberta(TransformerEncoder):
+class TransformerEncoderFromPretrainedRoberta(RobertaEncoder):
     def __init__(self, args, dictionary, embed_tokens):
-        super().__init__(args, dictionary, embed_tokens)
+        super().__init__(args, dictionary)
         assert hasattr(args, "pretrained_roberta_checkpoint"), (
             "--pretrained-roberta-checkpoint must be specified to load Transformer "
             "encoder from pretrained roberta"
         )
-        roberta_loaded_state_dict = upgrade_state_dict_with_roberta_weights(
-            state_dict=self.state_dict(),
-            pretrained_roberta_checkpoint=args.pretrained_roberta_checkpoint,
-        )
-        self.load_state_dict(roberta_loaded_state_dict, strict=True)
+        self.padding_idx = dictionary.pad()
+        #roberta_loaded_state_dict = upgrade_state_dict_with_roberta_weights(
+        #    state_dict=self.state_dict(),
+        #    pretrained_roberta_checkpoint=args.pretrained_roberta_checkpoint,
+        #)
+        #self.load_state_dict(roberta_loaded_state_dict, strict=True)
 
-
+    def forward(
+            self,
+            src_tokens,
+            features_only=False,
+            return_all_hiddens=False,
+            masked_tokens=None,
+            **unused
+    ):
+        x, extra = super().forward(src_tokens=src_tokens, return_all_hiddens=return_all_hiddens, features_only=True)
+        encoder_padding_mask = src_tokens.eq(self.padding_idx)
+        return {
+            "encoder_out": [x],  # T x B x C
+            "encoder_padding_mask": [encoder_padding_mask],
+            "encoder_embedding": None,
+            "encoder_states": None,
+            "src_tokens": [],
+            "src_lengths": [],
+        }
 
 @register_model_architecture(
     "transformer_from_pretrained_roberta", "transformer_from_pretrained_roberta"

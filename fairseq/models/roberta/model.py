@@ -397,7 +397,8 @@ class RobertaEncoder(FairseqEncoder):
         # set any missing default values
         base_architecture(args)
         self.args = args
-
+        if not hasattr(args, "max_positions"):
+            args.max_positions = args.tokens_per_sample
         if args.encoder_layers_to_keep:
             args.encoder_layers = len(args.encoder_layers_to_keep.split(","))
 
