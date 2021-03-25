@@ -102,7 +102,7 @@ class WrapperEncoderOfRobertaModel(RobertaEncoder):
         super().__init__(args, dictionary)
         self.padding_idx = dictionary.pad()
         phobert = RobertaModel.from_pretrained('/mnt/D/fscustomize/PhoBERT_base_fairseq', checkpoint_file='model.pt')
-        #self.load_state_dict(phobert.model.encoder.state_dict(), strict=False)
+        self.load_state_dict(phobert.model.encoder.state_dict(), strict=True)
     def forward(
             self,
             src_tokens,
