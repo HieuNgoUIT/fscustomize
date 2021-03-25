@@ -89,19 +89,11 @@ def upgrade_state_dict_with_roberta_weights(
                 state_dict[subkey] = roberta_state_dict[key]
     return state_dict
 
-
-def copy_state_dict_with_pretrained_roberta(state_dict: Dict[str, Any], pretrained_roberta_checkpoint: str
-) -> Dict[str, Any]:
-    state = checkpoint_utils.load_checkpoint_to_cpu(pretrained_roberta_checkpoint)
-    roberta_state_dict = state["model"]
-    state_dict = roberta_state_dict
-    return state_dict
-
 class WrapperEncoderOfRobertaModel(RobertaEncoder):
     def __init__(self, args, dictionary):
         super().__init__(args, dictionary)
         self.padding_idx = dictionary.pad()
-        phobert = RobertaModel.from_pretrained('/mnt/D/fscustomize/PhoBERT_base_fairseq', checkpoint_file='model.pt')
+        phobert = RobertaModel.from_pretrained(args.pretrained_roberta_checkpoint, checkpoint_file='model.pt')
         self.load_state_dict(phobert.model.encoder.state_dict(), strict=True)
 
     def forward(
