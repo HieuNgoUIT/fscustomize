@@ -429,13 +429,20 @@ class TransformerEncoder(FairseqEncoder):
                   hidden states of shape `(src_len, batch, embed_dim)`.
                   Only populated if *return_all_hiddens* is True.
         """
+        #token_embeddings = None
+        #src_token = [192,21]
         x, encoder_embedding = self.forward_embedding(src_tokens, token_embeddings)
+        #x = [192,21,512]
+        #encoder_embedding = [192,21,512]
+
+
 
         # B x T x C -> T x B x C
-        x = x.transpose(0, 1)
+        x = x.transpose(0, 1) #x[21,192,512]
 
         # compute padding mask
         encoder_padding_mask = src_tokens.eq(self.padding_idx)
+        #encoder_padding_mask[192,21]
 
         encoder_states = []
 
@@ -449,15 +456,18 @@ class TransformerEncoder(FairseqEncoder):
         if self.layer_norm is not None:
             x = self.layer_norm(x)
 
+
+
+
         # The Pytorch Mobile lite interpreter does not supports returning NamedTuple in
         # `foward` so we use a dictionary instead.
         # TorchScript does not support mixed values so the values are all lists.
         # The empty list is equivalent to None.
         return {
-            "encoder_out": [x],  # T x B x C
-            "encoder_padding_mask": [encoder_padding_mask],  # B x T
-            "encoder_embedding": [encoder_embedding],  # B x T x C
-            "encoder_states": encoder_states,  # List[T x B x C]
+            "encoder_out": [x],  # T x B x C #x[21,192,512]
+            "encoder_padding_mask": [encoder_padding_mask],  # B x T [192,21]
+            "encoder_embedding": [encoder_embedding],  # B x T x C #encoder_embedding[192,21,512]
+            "encoder_states": encoder_states,  # List[T x B x C] encoder_states[21,192,512]
             "src_tokens": [],
             "src_lengths": [],
         }

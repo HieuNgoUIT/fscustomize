@@ -99,7 +99,6 @@ class WrapperEncoderOfRobertaModel(RobertaEncoder):
     def __init__(self, args, dictionary):
         super().__init__(args, dictionary)
         self.padding_idx = dictionary.pad()
-        print(args.pretrained_roberta_checkpoint_folder)
         phobert = RobertaModel.from_pretrained(args.pretrained_roberta_checkpoint_folder, checkpoint_file='model.pt')
         self.load_state_dict(phobert.model.encoder.state_dict(), strict=True)
 
@@ -112,12 +111,14 @@ class WrapperEncoderOfRobertaModel(RobertaEncoder):
             **unused
     ):
         x, extra = super().forward(src_tokens=src_tokens, return_all_hiddens=return_all_hiddens, features_only=True)
+        x = x.permute(1, 0, 2)
+        encoderstates = extra["inner_states"]
         encoder_padding_mask = src_tokens.eq(self.padding_idx)
         return {
-            "encoder_out": [x.permute(1, 0, 2)],  # T x B x C
+            "encoder_out": [x],  # T x B x C
             "encoder_padding_mask": [encoder_padding_mask],
             "encoder_embedding": None,
-            "encoder_states": None,
+            "encoder_states": encoderstates,
             "src_tokens": [],
             "src_lengths": [],
         }

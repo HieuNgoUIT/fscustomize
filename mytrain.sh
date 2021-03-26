@@ -12,9 +12,10 @@ fairseq-train $PROCESSED_DIR/bin \
     -t trg \
     --criterion label_smoothed_cross_entropy \
     --max-epoch 30 \
-    --task translation_from_pretrained_roberta
+    --task translation_from_pretrained_roberta \
+    --share-decoder-input-output-embed --skip-invalid-size-inputs-valid-test
 
-#mydata/bin --save-dir mydata/model --arch transformer_from_pretrained_roberta --pretrained-roberta-checkpoint PhoBERT_base_fairseq/model.pt --max-tokens 4096 --optimizer adam -s src -t trg --criterion label_smoothed_cross_entropy --max-epoch 30 --task translation_from_pretrained_roberta
+#mydata/bin --save-dir mydata/model --arch transformer_from_pretrained_roberta --pretrained-roberta-checkpoint PhoBERT_base_fairseq/model.pt --max-tokens 4096 --optimizer adam -s src -t trg --criterion label_smoothed_cross_entropy --max-epoch 30 --task translation_from_pretrained_roberta --pretrained-roberta-checkpoint-folder /mnt/D/fscustomize/PhoBERT_base_fairseq
 
 
-#fairseq-train data-bin/iwslt14.tokenized.de-en --arch transformer_iwslt_de_en --share-decoder-input-output-embed --optimizer adam --clip-norm 0.0 --lr 5e-4 --lr-scheduler inverse_sqrt --warmup-updates 4000 --dropout 0.3 --weight-decay 0.0001 --criterion label_smoothed_cross_entropy --label-smoothing 0.1 --max-tokens 4096 --eval-bleu --eval-bleu-detok moses --eval-bleu-remove-bpe --eval-bleu-print-samples --best-checkpoint-metric bleu --maximize-best-checkpoint-metric
+#data-bin/iwslt14.tokenized.de-en --arch transformer_iwslt_de_en --share-decoder-input-output-embed --optimizer adam --clip-norm 0.0 --lr 5e-4 --lr-scheduler inverse_sqrt --warmup-updates 4000 --dropout 0.3 --weight-decay 0.0001 --criterion label_smoothed_cross_entropy --label-smoothing 0.1 --max-tokens 4096 --eval-bleu --eval-bleu-detok moses --eval-bleu-remove-bpe --eval-bleu-print-samples --best-checkpoint-metric bleu --maximize-best-checkpoint-metric
