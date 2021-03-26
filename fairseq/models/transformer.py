@@ -16,6 +16,7 @@ from fairseq.models import (
     register_model,
     register_model_architecture,
 )
+from fairseq.models.roberta import RobertaModel
 from fairseq.modules import (
     AdaptiveSoftmax,
     FairseqDropout,
@@ -196,6 +197,28 @@ class TransformerModel(FairseqEncoderDecoderModel):
 
         # make sure all arguments are present in older models
         base_architecture(args)
+        args.encoder_layers = getattr(args, "encoder_layers", 12)
+        args.encoder_embed_dim = getattr(args, "encoder_embed_dim", 768)
+        args.encoder_ffn_embed_dim = getattr(args, "encoder_ffn_embed_dim", 3072)
+        args.encoder_attention_heads = getattr(args, "encoder_attention_heads", 12)
+
+        args.activation_fn = getattr(args, "activation_fn", "gelu")
+        args.pooler_activation_fn = getattr(args, "pooler_activation_fn", "tanh")
+
+        args.dropout = getattr(args, "dropout", 0.1)
+        args.attention_dropout = getattr(args, "attention_dropout", 0.1)
+        args.activation_dropout = getattr(args, "activation_dropout", 0.0)
+        args.pooler_dropout = getattr(args, "pooler_dropout", 0.0)
+        args.encoder_layers_to_keep = getattr(args, "encoder_layers_to_keep", None)
+        args.encoder_layerdrop = getattr(args, "encoder_layerdrop", 0.0)
+        args.untie_weights_roberta = getattr(args, "untie_weights_roberta", False)
+        args.spectral_norm_classification_head = getattr(
+            args, "spectral_norm_classification_head", False
+        )
+        #args.encoder_embed_dim = 768
+        #args.encoder_ffn_embed_dim = 3072
+        #args.decoder_embed_dim = 768
+        #args.decoder_ffn_embed_dim = 3072
 
         if args.encoder_layers_to_keep:
             args.encoder_layers = len(args.encoder_layers_to_keep.split(","))
@@ -253,10 +276,15 @@ class TransformerModel(FairseqEncoderDecoderModel):
 
     @classmethod
     def build_encoder(cls, args, src_dict, embed_tokens):
-        return TransformerEncoder(args, src_dict, embed_tokens)
+        roberta = RobertaModel.from_pretrained('/mnt/D/fscustomize/PhoBERT_base_fairseq', checkpoint_file='model.pt')
+        cls.padding_idx = roberta.model.encoder.dictionary.pad()
+        return roberta.model.encoder
+        #return TransformerEncoder(args, src_dict, embed_tokens)
 
     @classmethod
     def build_decoder(cls, args, tgt_dict, embed_tokens):
+
+
         return TransformerDecoder(
             args,
             tgt_dict,
@@ -282,9 +310,15 @@ class TransformerModel(FairseqEncoderDecoderModel):
         Copied from the base class, but without ``**kwargs``,
         which are not supported by TorchScript.
         """
-        encoder_out = self.encoder(
-            src_tokens, src_lengths=src_lengths, return_all_hiddens=return_all_hiddens
-        )
+        # encoder_out = self.encoder(
+        #     src_tokens, src_lengths=src_lengths, return_all_hiddens=return_all_hiddens
+        # )
+        x, _ = self.encoder.extract_features(src_tokens)
+        encoder_padding_mask = src_tokens.eq(self.padding_idx)
+        encoder_out = {
+            "encoder_out": [x.permute(1, 0, 2)],
+            "encoder_padding_mask": [encoder_padding_mask]
+        }
         decoder_out = self.decoder(
             prev_output_tokens,
             encoder_out=encoder_out,
