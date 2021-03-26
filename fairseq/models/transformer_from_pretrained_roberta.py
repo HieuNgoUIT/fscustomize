@@ -31,6 +31,12 @@ class TransformerFromPretrainedRobertaModel(TransformerModel):
             metavar="STR",
             help="roberta model to use for initializing transformer encoder",
         )
+        parser.add_argument(
+            "--pretrained-roberta-checkpoint-folder",
+            type=str,
+            metavar="STR",
+            help="roberta model to use for initializing transformer encoder",
+        )
 
     @classmethod
     def build_model(self, args, task):
@@ -93,7 +99,8 @@ class WrapperEncoderOfRobertaModel(RobertaEncoder):
     def __init__(self, args, dictionary):
         super().__init__(args, dictionary)
         self.padding_idx = dictionary.pad()
-        phobert = RobertaModel.from_pretrained(args.pretrained_roberta_checkpoint, checkpoint_file='model.pt')
+        print(args.pretrained_roberta_checkpoint_folder)
+        phobert = RobertaModel.from_pretrained(args.pretrained_roberta_checkpoint_folder, checkpoint_file='model.pt')
         self.load_state_dict(phobert.model.encoder.state_dict(), strict=True)
 
     def forward(
@@ -107,7 +114,7 @@ class WrapperEncoderOfRobertaModel(RobertaEncoder):
         x, extra = super().forward(src_tokens=src_tokens, return_all_hiddens=return_all_hiddens, features_only=True)
         encoder_padding_mask = src_tokens.eq(self.padding_idx)
         return {
-            "encoder_out": [x],  # T x B x C
+            "encoder_out": [x.permute(1, 0, 2)],  # T x B x C
             "encoder_padding_mask": [encoder_padding_mask],
             "encoder_embedding": None,
             "encoder_states": None,
