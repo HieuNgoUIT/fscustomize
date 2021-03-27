@@ -31,12 +31,12 @@ class TransformerFromPretrainedRobertaModel(TransformerModel):
             metavar="STR",
             help="roberta model to use for initializing transformer encoder",
         )
-        parser.add_argument(
-            "--pretrained-roberta-checkpoint-folder",
-            type=str,
-            metavar="STR",
-            help="roberta model to use for initializing transformer encoder",
-        )
+        # parser.add_argument(
+        #     "--pretrained-roberta-checkpoint-folder",
+        #     type=str,
+        #     metavar="STR",
+        #     help="roberta model to use for initializing transformer encoder",
+        # )
 
     @classmethod
     def build_model(self, args, task):

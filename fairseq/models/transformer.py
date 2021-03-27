@@ -190,6 +190,12 @@ class TransformerModel(FairseqEncoderDecoderModel):
         parser.add_argument('--quant-noise-scalar', type=float, metavar='D', default=0,
                             help='scalar quantization noise and scalar quantization at training time')
         # fmt: on
+        parser.add_argument(
+            "--pretrained-roberta-checkpoint-folder",
+            type=str,
+            metavar="STR",
+            help="roberta model to use for initializing transformer encoder",
+        )
 
     @classmethod
     def build_model(cls, args, task):
@@ -215,11 +221,12 @@ class TransformerModel(FairseqEncoderDecoderModel):
         args.spectral_norm_classification_head = getattr(
             args, "spectral_norm_classification_head", False
         )
-        #args.encoder_embed_dim = 768
-        #args.encoder_ffn_embed_dim = 3072
-        #args.decoder_embed_dim = 768
-        #args.decoder_ffn_embed_dim = 3072
-
+        args.encoder_embed_dim = 768
+        args.encoder_ffn_embed_dim = 3072
+        args.decoder_embed_dim = 768
+        args.decoder_ffn_embed_dim = 3072
+        args.decoder_input_dim = 768
+        args.decoder_output_dim = 768
         if args.encoder_layers_to_keep:
             args.encoder_layers = len(args.encoder_layers_to_keep.split(","))
         if args.decoder_layers_to_keep:
@@ -276,7 +283,7 @@ class TransformerModel(FairseqEncoderDecoderModel):
 
     @classmethod
     def build_encoder(cls, args, src_dict, embed_tokens):
-        roberta = RobertaModel.from_pretrained('/mnt/D/fscustomize/PhoBERT_base_fairseq', checkpoint_file='model.pt')
+        roberta = RobertaModel.from_pretrained(args.pretrained_roberta_checkpoint_folder, checkpoint_file='model.pt')
         cls.padding_idx = roberta.model.encoder.dictionary.pad()
         return roberta.model.encoder
         #return TransformerEncoder(args, src_dict, embed_tokens)

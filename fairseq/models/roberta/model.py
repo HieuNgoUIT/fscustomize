@@ -480,6 +480,13 @@ class RobertaEncoder(FairseqEncoder):
         """Maximum output length supported by the encoder."""
         return self.args.max_positions
 
+    @torch.jit.export
+    def reorder_encoder_out(self, encoder_out, new_order):
+        # encoder_out = {
+        #     "encoder_out": [x.permute(1, 0, 2)],
+        #     "encoder_padding_mask": [encoder_padding_mask]
+        # }
+       return encoder_out
 
 @register_model_architecture("roberta", "roberta")
 def base_architecture(args):
