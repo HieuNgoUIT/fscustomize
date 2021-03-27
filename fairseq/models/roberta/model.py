@@ -468,8 +468,8 @@ class RobertaEncoder(FairseqEncoder):
         encoder_out = {
             "encoder_out": [x.permute(1, 0, 2)],
             "encoder_padding_mask": [encoder_padding_mask],
-            "encoder_embedding": None,  # B x T x C #encoder_embedding[192,21,512]
-            "encoder_states": extra["inner_states"],  # List[T x B x C] encoder_states[21,192,512]
+            "encoder_embedding": [],  # B x T x C #encoder_embedding[192,21,512]
+            "encoder_states": [],  # List[T x B x C] encoder_states[21,192,512]
             "src_tokens": [],
             "src_lengths": [],
         }
@@ -477,16 +477,47 @@ class RobertaEncoder(FairseqEncoder):
 
     @torch.jit.export
     def reorder_encoder_out(self, encoder_out, new_order):
-        a = encoder_out
-        # new_order = {
-        #     "encoder_out": [encoder_out[0].permute(1, 0, 2)],
-        #     "encoder_padding_mask": None,  # B x T
-        #     "encoder_embedding": None,  # B x T x C
-        #     "encoder_states": None,  # List[T x B x C]
-        #     "src_tokens": None,  # B x T
-        #     "src_lengths": None,  # B x 1
-        # }
-        return encoder_out
+        if len(encoder_out["encoder_out"]) == 0:
+            new_encoder_out = []
+        else:
+            new_encoder_out = [encoder_out["encoder_out"][0].index_select(1, new_order)]
+        if len(encoder_out["encoder_padding_mask"]) == 0:
+            new_encoder_padding_mask = []
+        else:
+            new_encoder_padding_mask = [
+                encoder_out["encoder_padding_mask"][0].index_select(0, new_order)
+            ]
+        if len(encoder_out["encoder_embedding"]) == 0:
+            new_encoder_embedding = []
+        else:
+            new_encoder_embedding = [
+                encoder_out["encoder_embedding"][0].index_select(0, new_order)
+            ]
+
+        if len(encoder_out["src_tokens"]) == 0:
+            src_tokens = []
+        else:
+            src_tokens = [(encoder_out["src_tokens"][0]).index_select(0, new_order)]
+
+        if len(encoder_out["src_lengths"]) == 0:
+            src_lengths = []
+        else:
+            src_lengths = [(encoder_out["src_lengths"][0]).index_select(0, new_order)]
+
+        encoder_states = encoder_out["encoder_states"]
+        if len(encoder_states) > 0:
+            for idx, state in enumerate(encoder_states):
+                encoder_states[idx] = state.index_select(1, new_order)
+
+        return {
+            "encoder_out": new_encoder_out,  # T x B x C
+            "encoder_padding_mask": new_encoder_padding_mask,  # B x T
+            "encoder_embedding": new_encoder_embedding,  # B x T x C
+            "encoder_states": encoder_states,  # List[T x B x C]
+            "src_tokens": src_tokens,  # B x T
+            "src_lengths": src_lengths,  # B x 1
+        }
+        #return encoder_out
 
     def extract_features(self, src_tokens, return_all_hiddens=False, **kwargs):
         inner_states, _ = self.sentence_encoder(
