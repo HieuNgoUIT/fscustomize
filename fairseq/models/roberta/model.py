@@ -457,12 +457,36 @@ class RobertaEncoder(FairseqEncoder):
                   is a list of hidden states. Note that the hidden
                   states have shape `(src_len, batch, vocab)`.
         """
-        x, extra = self.extract_features(
-            src_tokens, return_all_hiddens=return_all_hiddens
-        )
-        if not features_only:
-            x = self.output_layer(x, masked_tokens=masked_tokens)
-        return x, extra
+        # x, extra = self.extract_features(
+        #     src_tokens, return_all_hiddens=return_all_hiddens
+        # )
+        # if not features_only:
+        #     x = self.output_layer(x, masked_tokens=masked_tokens)
+        # return x, extra
+        x, extra = self.extract_features(src_tokens)
+        encoder_padding_mask = src_tokens.eq(1)
+        encoder_out = {
+            "encoder_out": [x.permute(1, 0, 2)],
+            "encoder_padding_mask": [encoder_padding_mask],
+            "encoder_embedding": None,  # B x T x C #encoder_embedding[192,21,512]
+            "encoder_states": extra["inner_states"],  # List[T x B x C] encoder_states[21,192,512]
+            "src_tokens": [],
+            "src_lengths": [],
+        }
+        return encoder_out
+
+    @torch.jit.export
+    def reorder_encoder_out(self, encoder_out, new_order):
+        a = encoder_out
+        # new_order = {
+        #     "encoder_out": [encoder_out[0].permute(1, 0, 2)],
+        #     "encoder_padding_mask": None,  # B x T
+        #     "encoder_embedding": None,  # B x T x C
+        #     "encoder_states": None,  # List[T x B x C]
+        #     "src_tokens": None,  # B x T
+        #     "src_lengths": None,  # B x 1
+        # }
+        return encoder_out
 
     def extract_features(self, src_tokens, return_all_hiddens=False, **kwargs):
         inner_states, _ = self.sentence_encoder(
@@ -480,13 +504,56 @@ class RobertaEncoder(FairseqEncoder):
         """Maximum output length supported by the encoder."""
         return self.args.max_positions
 
+
+
+class WrapModel(RobertaModel):
+    def __init__(self):
+        super().__init__()
+
+    @classmethod
+    def build_model(cls, args, task):
+        """Build a new model instance."""
+
+        # make sure all arguments are present
+        base_architecture(args)
+
+        if not hasattr(args, "max_positions"):
+            args.max_positions = args.tokens_per_sample
+
+        encoder = WrapEncoder(args, task.source_dictionary)
+        return cls(args, encoder)
+
+class WrapEncoder(RobertaEncoder):
+    def __init__(self):
+        super(WrapEncoder, self).__init__()
+
+    def forward(
+        self,
+        src_tokens,
+        features_only=False,
+        return_all_hiddens=False,
+        masked_tokens=None,
+        **unused
+    ):
+        x, _ = self.encoder.extract_features(src_tokens)
+        encoder_padding_mask = src_tokens.eq(self.padding_idx)
+        encoder_out = {
+            "encoder_out": [x.permute(1, 0, 2)],
+            "encoder_padding_mask": [encoder_padding_mask]
+        }
+        return encoder_out
+
     @torch.jit.export
     def reorder_encoder_out(self, encoder_out, new_order):
-        # encoder_out = {
-        #     "encoder_out": [x.permute(1, 0, 2)],
-        #     "encoder_padding_mask": [encoder_padding_mask]
+        # new_order = {
+        #     "encoder_out": [encoder_out[0].permute(1, 0, 2)],
+        #     "encoder_padding_mask": None,  # B x T
+        #     "encoder_embedding": None,  # B x T x C
+        #     "encoder_states": None,  # List[T x B x C]
+        #     "src_tokens": None,  # B x T
+        #     "src_lengths": None,  # B x 1
         # }
-       return encoder_out
+        return encoder_out
 
 @register_model_architecture("roberta", "roberta")
 def base_architecture(args):

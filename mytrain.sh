@@ -1,5 +1,5 @@
-PROCESSED_DIR=500k_roberta
-MODEL_DIR=500k_roberta/model
+PROCESSED_DIR=mydata
+MODEL_DIR=mydata/model
 MYDIRECTORY=`pwd`
 #fairseq-train $PROCESSED_DIR/bin \
 #    --save-dir $MODEL_DIR \
@@ -28,7 +28,7 @@ fairseq-train $PROCESSED_DIR/bin \
     --weight-decay 0.0001 \
     --criterion label_smoothed_cross_entropy \
     --label-smoothing 0.1 --max-tokens 4096 \
-
+    --skip-invalid-size-inputs-valid-test
 
 
 

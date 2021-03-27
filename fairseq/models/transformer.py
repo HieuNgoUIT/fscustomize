@@ -16,7 +16,7 @@ from fairseq.models import (
     register_model,
     register_model_architecture,
 )
-from fairseq.models.roberta import RobertaModel
+from fairseq.models.roberta import RobertaModel, WrapModel
 from fairseq.modules import (
     AdaptiveSoftmax,
     FairseqDropout,
@@ -283,7 +283,8 @@ class TransformerModel(FairseqEncoderDecoderModel):
 
     @classmethod
     def build_encoder(cls, args, src_dict, embed_tokens):
-        roberta = RobertaModel.from_pretrained(args.pretrained_roberta_checkpoint_folder, checkpoint_file='model.pt')
+        #roberta = RobertaModel.from_pretrained(args.pretrained_roberta_checkpoint_folder, checkpoint_file='model.pt')
+        roberta = RobertaModel.from_pretrained("/mnt/D/fscustomize/PhoBERT_base_fairseq", checkpoint_file='model.pt')
         cls.padding_idx = roberta.model.encoder.dictionary.pad()
         return roberta.model.encoder
         #return TransformerEncoder(args, src_dict, embed_tokens)
@@ -320,12 +321,15 @@ class TransformerModel(FairseqEncoderDecoderModel):
         # encoder_out = self.encoder(
         #     src_tokens, src_lengths=src_lengths, return_all_hiddens=return_all_hiddens
         # )
-        x, _ = self.encoder.extract_features(src_tokens)
-        encoder_padding_mask = src_tokens.eq(self.padding_idx)
-        encoder_out = {
-            "encoder_out": [x.permute(1, 0, 2)],
-            "encoder_padding_mask": [encoder_padding_mask]
-        }
+
+        # x, _ = self.encoder.extract_features(src_tokens)
+        # encoder_padding_mask = src_tokens.eq(self.padding_idx)
+        # encoder_out = {
+        #     "encoder_out": [x.permute(1, 0, 2)],
+        #     "encoder_padding_mask": [encoder_padding_mask]
+        # }
+        encoder_out = self.encoder(src_tokens)
+
         decoder_out = self.decoder(
             prev_output_tokens,
             encoder_out=encoder_out,
