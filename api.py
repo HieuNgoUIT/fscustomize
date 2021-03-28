@@ -5,32 +5,48 @@ from transformers import AutoTokenizer
 from fairseq import checkpoint_utils, options, tasks, utils
 from fairseq.data import encoders
 from fairseq.dataclass.utils import convert_namespace_to_omegaconf
-
+from fairseq_cli.generate import get_symbols_to_strip_from_output
 Batch = namedtuple('Batch', 'ids src_tokens src_lengths')
+import math
 
 def buffered_read(lines_of_text, buffer_size):
   for line in lines_of_text:
     yield line
 
-def make_batches(lines, args, task, max_positions, encode_fn):
-  tokens = [
-      task.source_dictionary.encode_line(
-          encode_fn(src_str), add_if_not_exist=False
-      ).long()
-      for src_str in lines
-  ]
-  lengths = torch.LongTensor([t.numel() for t in tokens])
-  itr = task.get_batch_iterator(
-      dataset=task.build_dataset_for_inference(tokens, lengths),
-      max_tokens=args.max_tokens,
-      max_sentences=args.max_sentences,
-      max_positions=max_positions,
-  ).next_epoch_itr(shuffle=False)
-  for batch in itr:
-      yield Batch(
-          ids=batch['id'],
-          src_tokens=batch['net_input']['src_tokens'], src_lengths=batch['net_input']['src_lengths'],
-      )
+def make_batches(lines, cfg, task, max_positions, encode_fn):
+    def encode_fn_target(x):
+        return encode_fn(x)
+
+    tokens = [
+        task.source_dictionary.encode_line(
+            encode_fn(src_str), add_if_not_exist=False
+        ).long()
+        for src_str in lines
+    ]
+
+    lengths = [t.numel() for t in tokens]
+    itr = task.get_batch_iterator(
+        dataset=task.build_dataset_for_inference(
+            tokens, lengths),
+        max_tokens=cfg.dataset.max_tokens,
+        max_sentences=cfg.dataset.batch_size,
+        max_positions=max_positions,
+        ignore_invalid_inputs=cfg.dataset.skip_invalid_size_inputs_valid_test,
+    ).next_epoch_itr(shuffle=False)
+    for batch in itr:
+        ids = batch["id"]
+        src_tokens = batch["net_input"]["src_tokens"]
+        src_lengths = batch["net_input"]["src_lengths"]
+        
+
+        yield Batch(
+            ids=ids,
+            src_tokens=src_tokens,
+            src_lengths=src_lengths,
+            
+        )
+
+
 
 class FairseqRunner:
   def __init__(self):
@@ -167,7 +183,7 @@ class FairseqRunner:
                 )
 
         # sort output to match input order
-        for id_, src_tokens, hypos, info in sorted(results, key=lambda x: x[0]):
+        for id_, src_tokens, hypos in sorted(results, key=lambda x: x[0]):
             if src_dict is not None:
                 src_str = src_dict.string(src_tokens, cfg.common_eval.post_process)
 
@@ -184,7 +200,9 @@ class FairseqRunner:
                 )
                 detok_hypo_str = decode_fn(hypo_str)
                 score = hypo["score"] / math.log(2)  # convert to base 2
-
+                #print(detok_hypo_str, hypo_str, hypo_tokens)
+                yield (detok_hypo_str, hypo_str, hypo_tokens)
+                
         # update running id_ counter
         start_id += len(inputs)
 
@@ -197,8 +215,8 @@ if __name__ == '__main__':
 
   @app.route('/', methods=['POST'])
   def hello():
-    if request.json is None or 'text' not in request.json:
-      return { 'error': '"text" field in JSON payload is required'}, 400
+    #if request.json is None or 'text' not in request.json:
+    #  return { 'error': '"text" field in JSON payload is required'}, 400
     text = request.json.get('text')
     if not isinstance(text, list):
       return { 'error': '"text" is expected to be a list of texts pieces'}, 400
