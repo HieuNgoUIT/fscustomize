@@ -194,7 +194,7 @@ class TransformerModel(FairseqEncoderDecoderModel):
             "--pretrained-roberta-checkpoint-folder",
             type=str,
             metavar="STR",
-            help="roberta folder to use for initializing transformer encoder",
+            help="roberta model to use for initializing transformer encoder",
         )
 
     @classmethod
@@ -203,8 +203,30 @@ class TransformerModel(FairseqEncoderDecoderModel):
 
         # make sure all arguments are present in older models
         base_architecture(args)
-        custom_roberta_dec(args)
+        args.encoder_layers = getattr(args, "encoder_layers", 12)
+        args.encoder_embed_dim = getattr(args, "encoder_embed_dim", 768)
+        args.encoder_ffn_embed_dim = getattr(args, "encoder_ffn_embed_dim", 3072)
+        args.encoder_attention_heads = getattr(args, "encoder_attention_heads", 12)
 
+        args.activation_fn = getattr(args, "activation_fn", "gelu")
+        args.pooler_activation_fn = getattr(args, "pooler_activation_fn", "tanh")
+
+        args.dropout = getattr(args, "dropout", 0.1)
+        args.attention_dropout = getattr(args, "attention_dropout", 0.1)
+        args.activation_dropout = getattr(args, "activation_dropout", 0.0)
+        args.pooler_dropout = getattr(args, "pooler_dropout", 0.0)
+        args.encoder_layers_to_keep = getattr(args, "encoder_layers_to_keep", None)
+        args.encoder_layerdrop = getattr(args, "encoder_layerdrop", 0.0)
+        args.untie_weights_roberta = getattr(args, "untie_weights_roberta", False)
+        args.spectral_norm_classification_head = getattr(
+            args, "spectral_norm_classification_head", False
+        )
+        args.encoder_embed_dim = 768
+        args.encoder_ffn_embed_dim = 3072
+        args.decoder_embed_dim = 768
+        args.decoder_ffn_embed_dim = 3072
+        args.decoder_input_dim = 768
+        args.decoder_output_dim = 768
         if args.encoder_layers_to_keep:
             args.encoder_layers = len(args.encoder_layers_to_keep.split(","))
         if args.decoder_layers_to_keep:
@@ -261,7 +283,8 @@ class TransformerModel(FairseqEncoderDecoderModel):
 
     @classmethod
     def build_encoder(cls, args, src_dict, embed_tokens):
-        roberta = RobertaModel.from_pretrained(args.pretrained_roberta_checkpoint_folder, checkpoint_file='model.pt')
+        #roberta = RobertaModel.from_pretrained(args.pretrained_roberta_checkpoint_folder, checkpoint_file='model.pt')
+        roberta = RobertaModel.from_pretrained("/mnt/D/fscustomize/PhoBERT_base_fairseq", checkpoint_file='model.pt')
         cls.padding_idx = roberta.model.encoder.dictionary.pad()
         return roberta.model.encoder
         #return TransformerEncoder(args, src_dict, embed_tokens)
@@ -1085,32 +1108,3 @@ def transformer_wmt_en_de_big_t2t(args):
     args.attention_dropout = getattr(args, "attention_dropout", 0.1)
     args.activation_dropout = getattr(args, "activation_dropout", 0.1)
     transformer_vaswani_wmt_en_de_big(args)
-
-def custom_roberta_dec(args):
-    #Roberta
-    args.encoder_layers = getattr(args, "encoder_layers", 12)
-    args.encoder_embed_dim = getattr(args, "encoder_embed_dim", 768)
-    args.encoder_ffn_embed_dim = getattr(args, "encoder_ffn_embed_dim", 3072)
-    args.encoder_attention_heads = getattr(args, "encoder_attention_heads", 12)
-
-    args.activation_fn = getattr(args, "activation_fn", "gelu")
-    args.pooler_activation_fn = getattr(args, "pooler_activation_fn", "tanh")
-
-    args.dropout = getattr(args, "dropout", 0.1)
-    args.attention_dropout = getattr(args, "attention_dropout", 0.1)
-    args.activation_dropout = getattr(args, "activation_dropout", 0.0)
-    args.pooler_dropout = getattr(args, "pooler_dropout", 0.0)
-    args.encoder_layers_to_keep = getattr(args, "encoder_layers_to_keep", None)
-    args.encoder_layerdrop = getattr(args, "encoder_layerdrop", 0.0)
-    args.untie_weights_roberta = getattr(args, "untie_weights_roberta", False)
-    args.spectral_norm_classification_head = getattr(
-        args, "spectral_norm_classification_head", False
-    )
-
-    #Decoder adapt to roberta
-    args.encoder_embed_dim = 768
-    args.encoder_ffn_embed_dim = 3072
-    args.decoder_embed_dim = 768
-    args.decoder_ffn_embed_dim = 3072
-    args.decoder_input_dim = 768
-    args.decoder_output_dim = 768
