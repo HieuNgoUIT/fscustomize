@@ -71,13 +71,8 @@ def main(cfg: DictConfig) -> None:
 
     # Build model and criterion
     model = task.build_model(cfg.model)
-
     for param in model.encoder.parameters():
         param.requires_grad = False
-
-    # file = open("testifloadpretrain.txt", "w")
-    # for name, param in model.named_parameters():
-    #     file.write(str(name) + str(param) + "\n")
 
     criterion = task.build_criterion(cfg.criterion)
     logger.info(model)
