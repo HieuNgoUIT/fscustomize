@@ -285,6 +285,7 @@ def add_preprocess_args(parser):
                        help="Pad dictionary size to be multiple of N")
     group.add_argument("--workers", metavar="N", default=1, type=int,
                        help="number of parallel workers")
+    parser.add_argument('--bert-model-name', default='bert-base-multilingual-cased', type=str)
     # fmt: on
     return parser
 

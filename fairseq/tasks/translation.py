@@ -233,6 +233,8 @@ class TranslationTask(LegacyFairseqTask):
                                  'e.g., \'{"beam": 4, "lenpen": 0.6}\'')
         parser.add_argument('--eval-bleu-print-samples', action='store_true',
                             help='print sample generations during validation')
+
+        parser.add_argument('--bert-model-name', default='bert-base-multilingual-cased', type=str)
         # fmt: on
 
     def __init__(self, args, src_dict, tgt_dict):
